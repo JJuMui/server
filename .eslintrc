@@ -1,0 +1,20 @@
+{
+  "env": {
+    "node": true,
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "prettier/@typescript-eslint",
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "./tsconfig.json",
+    "ecmaVersion": "latest",
+    "sourceType": "module",
+  },
+  "rules": {
+    "prettier/prettier": ["error", { "endOfLine": "auto" }],
+  },
+  "ignorePatters": ["node_modules/", "dist/"],
+}
