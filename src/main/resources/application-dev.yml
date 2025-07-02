@@ -1,0 +1,57 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  application:
+    name: eodiroo-dev
+  docker:
+    compose:
+      enabled: false
+
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update # 또는 validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      username: ${REDIS_USERNAME}
+      password: ${REDIS_PASSWORD}
+      repositories:
+        enabled: true
+
+management:
+  datadog:
+    metrics:
+      export:
+        enabled: true
+        api-key: ${DATADOG_API_KEY} # 환경 변수 사용 권장
+        application-key: ${DATADOG_APPLICATION_KEY}
+        uri: ${DATADOG_SITE}
+        tags:
+          - env:dev
+          - service:eodiroo
+          - version:1.0.0
+          - team:backend
+
+logging:
+  config: classpath:logback-dev.xml
