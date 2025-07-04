@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: 'postgres:latest'
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+    ports:
+      - ${POSTGRES_PORT}
+  redis:
+    image: 'redis/redis-stack:latest'
+    labels:
+      - "org.springframework.boot.service-connection=redis"
+    ports:
+      - '6379'
+  my-spring-app: # Spring Boot 애플리케이션 서비스
+    build: . # Dockerfile을 통해 애플리케이션 이미지 빌드
+    container_name: eodiroo
+    ports:
+      - '8080:8080'
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker # docker 프로필 활성화
+      - DATADOG_API_KEY=${DATADOG_API_KEY} # 환경 변수 주입
+      - DATADOG_APPLICATION_KEY=${DATADOG_APPLICATION_KEY} # 환경 변수 주입
+      # ... 기타 애플리케이션 환경 변수 ...
+    volumes:
+      - /var/app/log/eodiroo # 애플리케이션 로그를 호스트 볼륨에 마운트 (Datadog Agent가 읽을 수 있도록)
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # APM을 위한 Datadog Java Agent 연결 (선택 사항)
+    # command: java -javaagent:/opt/datadog/dd-java-agent.jar -Ddd.service.name=my-spring-app -Ddd.env=local -Ddd.version=1.0.0 -jar /app/app.jar
+
+  datadog-agent:
+    image: 'datadog/agent:latest' # 또는 특정 버전
+    container_name: datadog-agent
+    environment:
+      - DD_API_KEY=${DATADOG_API_KEY}
+      - DD_SITE=${DATADOG_SITE}
+      - DD_APM_ENABLED=true # APM 활성화
+      - DD_LOGS_ENABLED=true # 로그 수집 활성화
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true # 모든 컨테이너 로그 수집
+      - DD_PROCESS_AGENT_ENABLED=true
+      - DD_CONTAINER_EXCLUDE="name:datadog-agent" # Agent 자신은 모니터링 제외
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Docker 소켓 마운트 (컨테이너 메타데이터 수집)
+      - /proc/:/host/proc/:ro # 호스트 프로세스 정보 수집
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup/:ro # cgroup 정보 수집
+      - /var/log/my-spring-app:/var/log/my-spring-app:ro # 애플리케이션 로그 볼륨 마운트
+    ports:
+      - '8126:8126/udp' # APM 트레이스 수신 포트
+    restart: unless-stopped
